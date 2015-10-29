@@ -1,0 +1,130 @@
+{ 
+   int i, j, k;
+   int chunk = 10;
+    #pragma omp parallel for shared(N,M) private(i,j) num_threads(num_tasks) schedule (dynamic,chunk)
+    for (i = 0; i < M; i++)
+        {
+         for (j = 0; j < N; j++)
+             { 
+              
+               
+                REAL temp=0.0;
+                #pragma omp parallel for shared(K,A,B,C,i,j) reduction(+:temp) private(k)
+                for (k = 0; k < K; k++)  
+                    {
+                     temp += A[i][k] * B[k][j];
+                    }
+               
+                C[i][j] = temp;
+                
+             }//inner for j
+        }//outer for i
+}//function end
+
+/*{ 
+   int i, j, k;
+   int chunk = 10;
+   REAL temp;
+  # pragma omp parallel for num_threads (num_tasks) private (i,j,k,temp) shared (A,B,C) firstprivate(M,K,N)
+    
+    for (i = 0; i < M; i++) 
+        {
+         for (j = 0; j < N; j++)
+             {
+              #pragma omp task
+              {REAL temp = 0.0; 
+              #pragma omp for
+              for (k = 0; k < K; k++)  
+                  {
+                   temp += A[i][k] * B[k][j];
+                  }
+                C[i][j] = temp;
+            }
+             }//inner for j 
+        }//outer for i 
+}//function end*/
+/*{ 
+   int i, j, k;
+   int chunk = 10;
+    #pragma omp parallel shared(N,M,K,A,B,C) private(i,j,k) num_threads(num_tasks)
+    {
+     #pragma omp for nowait schedule (dynamic, chunk) 
+     for (i = 0; i < M; i++)
+         {
+         for (j = 0; j < N; j++)
+             { 
+                #pragma omp parallel sections shared(A,B,K)  private(k)
+                {
+                //#pragma omp section
+                C[i][j] = 0;
+                //#pragma omp section
+                
+                #pragma omp for nowait private(k)
+                for (k = 0; k < K; k++)  
+                    {
+                     C[i][j] += A[i][k] * B[k][j];
+                    }
+                
+                }
+                
+                
+             }//inner for j
+        }//outer for i
+    }
+}//function end*/
+/*{ //need to modify the error section
+   int i, j, k;
+   int chunk = 10;
+   REAL temp;
+   #pragma omp parallel for shared(M,N,K,C,A,B) private(i,j,k) num_threads(num_tasks) schedule (dynamic, chunk)
+   // { 
+     for (i = 0; i < M; i++)
+         {
+          for (j = 0; j < N; j++)
+             { 
+               #pragma omp single nowait
+               {
+                REAL temp=0.0;
+                #pragma omp parallel for reduction(+:temp) shared(K,C,A,B,i,j) private(k)
+                for (k = 0; k < K; k++)  
+                    {
+                     temp += A[i][k] * B[k][j];
+                    }
+                C[i][j]=temp;
+               }
+            }//inner for j
+        
+         }//outer for i
+    //}
+}//function end*/
+{ 
+   int i, j, k;
+   int chunk = 10;
+   REAL temp;
+    #pragma omp parallel shared(N,M,K,A,B,C) num_threads(num_tasks)
+{ 
+    #pragma omp for nowait schedule (dynamic,chunk) private(i,j)
+    for (i = 0; i < M; i++)
+        {
+         //#pragma omp for nowait private(j)
+         for (j = 0; j < N; j++)
+             { 
+                #pragma omp single nowait
+               {
+                REAL temp=0.0;
+                #pragma omp parallel reduction(+:temp) private(k)
+                 { 
+                 #pragma omp for nowait
+                 for (k = 0; k < K; k++)  
+                    {
+                     temp += A[i][k] * B[k][j];
+                    }
+                 C[i][j] = temp;
+                 }
+               }
+                 
+             }//inner for j
+        }//outer for i
+}
+}//function end
+
